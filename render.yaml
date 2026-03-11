@@ -4,12 +4,12 @@ services:
     runtime: python
     rootDir: ultrascrap
     buildCommand: bash build.sh
-    startCommand: python backend/main.py
+    startCommand: python3 backend/main.py
     envVars:
-      - key: PYTHONUNBUFFERED
-        value: "1"
       - key: PYTHON_VERSION
         value: "3.11.9"
+      - key: PYTHONUNBUFFERED
+        value: "1"
       - key: PLAYWRIGHT_BROWSERS_PATH
-        value: /opt/render/project/src/.playwright
+        value: /opt/render/.cache/ms-playwright
     region: oregon
