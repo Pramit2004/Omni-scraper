@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ultrascrap
+    runtime: python
+    rootDir: ultrascrap
+    buildCommand: bash build.sh
+    startCommand: python backend/main.py
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    region: oregon
