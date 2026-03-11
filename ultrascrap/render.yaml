@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ultrascrap
+    runtime: python
+    rootDir: ultrascrap
+    buildCommand: >
+      pip install -r requirements.txt &&
+      playwright install chromium &&
+      playwright install-deps chromium &&
+      curl -fsSL https://deb.nodesource.com/setup_20.x | bash - &&
+      apt-get install -y nodejs &&
+      cd frontend && npm install && npm run build && cd ..
+    startCommand: python backend/main.py
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+    region: oregon
