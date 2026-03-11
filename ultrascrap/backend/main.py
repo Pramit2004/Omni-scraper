@@ -189,19 +189,28 @@ async def websocket_endpoint(websocket: WebSocket, job_id: str):
 
 
 # ── Static frontend ───────────────────────────────────────────────────────────
-# Pre-build frontend locally, commit frontend/dist/, then Render serves it here.
 
+# __file__ = .../ultrascrap/backend/main.py
+# so parent.parent = .../ultrascrap/
+# then / "frontend" / "dist" = .../ultrascrap/frontend/dist
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
 
+print(f"[STATIC] __file__      = {__file__}", flush=True)
+print(f"[STATIC] frontend_dist = {frontend_dist}", flush=True)
+print(f"[STATIC] exists        = {frontend_dist.exists()}", flush=True)
+
 if frontend_dist.exists():
+    print(f"[STATIC] Mounting frontend from {frontend_dist}", flush=True)
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
 else:
+    print(f"[STATIC] WARNING: dist not found at {frontend_dist}", flush=True)
     @app.get("/")
     async def no_frontend():
         return {
             "status": "api_only",
-            "message": "Frontend not built. Run: cd frontend && npm install && npm run build",
-            "docs": "/docs",
+            "dist_path_checked": str(frontend_dist),
+            "cwd": str(Path.cwd()),
+            "fix": "frontend/dist not found — check build step",
         }
 
 
