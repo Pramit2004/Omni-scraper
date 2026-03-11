@@ -102,7 +102,7 @@ async def create_job(req: ScrapeRequest):
         urls=urls,
         data_type=req.data_type,
         max_items=req.max_items,
-        concurrency=min(req.concurrency, 15),
+        concurrency=min(req.concurrency, 4),   # cap at 4 for Render free tier RAM
         proxy_list=req.proxy_list,
     )
     return {"job_id": job.id, "urls": urls, "count": len(urls)}
@@ -189,14 +189,25 @@ async def websocket_endpoint(websocket: WebSocket, job_id: str):
 
 
 # ── Static frontend ───────────────────────────────────────────────────────────
+# Pre-build frontend locally, commit frontend/dist/, then Render serves it here.
 
 frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+
 if frontend_dist.exists():
     app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
+else:
+    @app.get("/")
+    async def no_frontend():
+        return {
+            "status": "api_only",
+            "message": "Frontend not built. Run: cd frontend && npm install && npm run build",
+            "docs": "/docs",
+        }
 
 
 # ── Entry ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    port = int(os.getenv("APP_PORT", 8000))
+    # Render sets PORT; local dev uses APP_PORT or 8000
+    port = int(os.getenv("PORT", os.getenv("APP_PORT", 8000)))
     uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False, log_level="info")

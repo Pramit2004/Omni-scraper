@@ -714,10 +714,10 @@ BLOCKED_RESOURCES = {"image", "media", "font", "stylesheet"}
 @dataclass
 class RateController:
     target_error_rate: float = 0.05
-    concurrency:       float = 5.0
+    concurrency:       float = 2.0        # start conservative for cloud
     min_concurrency:   float = 1.0
-    max_concurrency:   float = 20.0
-    increase_step:     float = 1.0
+    max_concurrency:   float = 4.0        # hard cap for 512MB Render free tier
+    increase_step:     float = 0.5
     decrease_factor:   float = 0.6
     delay_min:         float = 0.05   # was 0.8
     delay_max:         float = 0.4    # was 3.0
@@ -991,10 +991,16 @@ class TurboSessionManager:
                 headless=True,
                 args=[
                     "--no-sandbox", "--disable-setuid-sandbox",
-                    "--disable-dev-shm-usage", "--disable-gpu",
-                    "--disable-extensions", "--disable-background-networking",
+                    "--disable-dev-shm-usage",          # use /tmp instead of /dev/shm
+                    "--disable-gpu",
+                    "--disable-extensions",
+                    "--disable-background-networking",
                     "--disable-sync", "--mute-audio", "--no-first-run",
                     "--blink-settings=imagesEnabled=false",
+                    "--single-process",                 # saves ~50MB per context on low-RAM hosts
+                    "--memory-pressure-off",
+                    "--disable-features=VizDisplayCompositor",
+                    "--renderer-process-limit=4",       # hard cap on renderer processes
                 ],
             )
         return self._browser
@@ -1121,7 +1127,7 @@ class UltraScraper:
     def __init__(
         self,
         proxy_list:      list[str] | None = None,
-        max_concurrency: int = 10,
+        max_concurrency: int = 3,   # safe default for 512MB cloud (Render free tier)
         data_type:       str = "auto",
     ):
         self._proxy_list      = proxy_list or []
