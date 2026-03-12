@@ -74,13 +74,13 @@ BLOCKED_RESOURCES = {"image", "media", "font", "stylesheet"}
 @dataclass
 class RateController:
     target_error_rate: float = 0.05
-    concurrency:       float = 2.0        # start conservative for cloud
+    concurrency:       float = 2.0
     min_concurrency:   float = 1.0
-    max_concurrency:   float = 4.0        # hard cap for 512MB Render free tier
+    max_concurrency:   float = 4.0
     increase_step:     float = 0.5
     decrease_factor:   float = 0.6
-    delay_min:         float = 0.05   # was 0.8
-    delay_max:         float = 0.4    # was 3.0
+    delay_min:         float = 0.05
+    delay_max:         float = 0.4
 
     _integral:      float = 0.0
     _prev_error:    float = 0.0
@@ -363,8 +363,6 @@ class TurboSessionManager:
                     "--disable-translate",
                     "--mute-audio",
                     "--no-first-run",
-                    "--no-zygote",
-                    "--single-process",
                     "--disable-features=VizDisplayCompositor,TranslateUI",
                     "--blink-settings=imagesEnabled=false",
                 ],
@@ -494,7 +492,7 @@ class UltraScraper:
     def __init__(
         self,
         proxy_list:      list[str] | None = None,
-        max_concurrency: int = 3,   # safe default for 512MB cloud (Render free tier)
+        max_concurrency: int = 3,
         data_type:       str = "auto",
     ):
         self._proxy_list      = proxy_list or []
@@ -541,7 +539,6 @@ class UltraScraper:
             try:
                 page = await self._session_mgr.acquire_page(domain)
 
-                # "commit" = first byte received — fastest possible trigger
                 resp      = await page.goto(url, wait_until="commit", timeout=20000)
                 http_code = resp.status if resp else 0
                 rc.record(http_code)
@@ -554,13 +551,11 @@ class UltraScraper:
                     await self._session_mgr.release_page(page)
                     return ScrapeResult(url=url, status=ScrapeStatus.ERROR, http_code=403, error="Access denied")
 
-                # Wait for body — fast, usually <200ms after commit
                 try:
                     await page.wait_for_selector("body", timeout=5000)
                 except Exception:
                     pass
 
-                # Ghost scroll — triggers lazy-load, ~0ms
                 await self._behavior.ghost_scroll(page)
 
                 data     = await UniversalExtractor.extract(page, url, self._data_type)
